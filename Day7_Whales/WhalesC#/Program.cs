@@ -33,10 +33,5 @@ int CalculateOne(int crabPos, int targetPos)
 int CalculateTwo(int crabPos, int targetPos)
 {
   var diff = Math.Abs(crabPos - targetPos);
-  var result = 0;
-  foreach (var num in Enumerable.Range(1, diff))
-  {
-    result += num;
-  }
-  return result;
+  return (diff / 2) * diff;
 }
