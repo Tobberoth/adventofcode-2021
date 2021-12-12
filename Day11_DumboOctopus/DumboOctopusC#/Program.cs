@@ -1,22 +1,38 @@
 ﻿var WIDTH = 10;
 var HEIGHT = 10;
-Dictionary<(int,int), Octopus> octopodes = ReadInput("input.txt");
-var count = 0;
-for (var round = 0; round < 100; round++)
-  count += Step(octopodes);
-Console.WriteLine($"{count} flashes");
+Step1(ReadInput("input.txt"));
+Step2(ReadInput("input.txt"));
+
+void Step1(Dictionary<(int, int), Octopus> octopodes)
+{
+  var count = 0;
+  for (var round = 0; round < 100; round++)
+    count += Step(octopodes);
+  Console.WriteLine($"{count} flashes");
+}
+
+void Step2(Dictionary<(int, int), Octopus> octopodes)
+{
+  var roundCount = 0;
+  while (true)
+  {
+    roundCount++;
+    var flashes = Step(octopodes);
+    if (flashes == 100)
+    {
+      Console.WriteLine($"100 flashes on round {roundCount}");
+      break;
+    }
+  }
+}
 
 Dictionary<(int, int), Octopus> ReadInput(string filename)
 {
   var octopodes = new Dictionary<(int,int), Octopus>();
   var lines = System.IO.File.ReadAllLines(filename);
   for (var y = 0; y < HEIGHT; y++)
-  {
     for (var x = 0; x < WIDTH; x++)
-    {
       octopodes.Add((x, y), new Octopus(int.Parse(lines[y][x].ToString()), x, y));
-    }
-  }
   return octopodes;
 }
 
@@ -28,11 +44,10 @@ int Step(Dictionary<(int,int), Octopus> octopodes)
     octopus.HasFlashed = false;
     octopus.EnergyLevel++;
   }
-  while (true)
+
+  var aboutToFlash = octopodes.Values.Where(o => o.EnergyLevel > 9);
+  while (aboutToFlash.Count() != 0)
   {
-    var aboutToFlash = octopodes.Values.Where(o => o.EnergyLevel > 9 && !o.HasFlashed);
-    if (aboutToFlash.Count() == 0)
-      break;
     foreach (var octopus in aboutToFlash)
     {
       count++;
@@ -40,28 +55,12 @@ int Step(Dictionary<(int,int), Octopus> octopodes)
       octopus.EnergyLevel = 0;
       var allAdjacent = GetAdjacent(octopus, octopodes);
       foreach (var adj in allAdjacent)
-      {
         if (!adj.HasFlashed)
-        {
           adj.EnergyLevel++;
-        }
-      }
     }
+    aboutToFlash = octopodes.Values.Where(o => o.EnergyLevel > 9 && !o.HasFlashed);
   }
   return count;
-}
-
-void Print(Dictionary<(int, int), Octopus> octopodes)
-{
-  for (var y = 0; y < HEIGHT; y++)
-  {
-    for (var x = 0; x < WIDTH; x++)
-    {
-      Console.Write(octopodes[(x,y)].EnergyLevel);
-    }
-    Console.Write("\r\n");
-  }
-  Console.WriteLine();
 }
 
 List<Octopus> GetAdjacent(Octopus octo, Dictionary<(int,int), Octopus> octopodes)
