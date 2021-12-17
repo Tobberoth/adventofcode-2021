@@ -1,22 +1,26 @@
 ﻿var shooter = new Shooter("input.txt");
-var maxInitial = 500;
+var maxInitial = 200;
 var highestY = 0;
+var countHits = 0;
 for (var x = -maxInitial; x < maxInitial; x++)
 {
   for (var y = -maxInitial; y < maxInitial; y++)
   {
-    var maxY = shooter.Shoot(x, y);
+    (bool hit, int maxY) = shooter.Shoot(x, y);
     if (maxY > highestY)
       highestY = maxY;
+    if (hit)
+      countHits++;
   }
 }
 Console.WriteLine($"Highest Y: {highestY}");
+Console.WriteLine($"Hit {countHits} times");
 
 public class Shooter
 {
   public List<int> XRange { get; set; }
   public List<int> YRange { get; set; }
-  public int MaxSteps = 500;
+  public int MaxSteps = 400;
 
   public Shooter(string filename)
   {
@@ -39,7 +43,7 @@ public class Shooter
       yRangeStartEnd[1] + 1 - yRangeStartEnd[0]).ToList();
   }
 
-  public int Shoot(int x, int y)
+  public (bool hit, int maxY) Shoot(int x, int y)
   {
     var probe = (x: 0, y: 0);
     var maxY = 0;
@@ -52,19 +56,9 @@ public class Shooter
       if (x > 0) x--;
       else if (x < 0) x++;
       y--;
-      if (IsProbeInRange(probe.x, probe.y))
-        return maxY;
+      if (XRange.Contains(probe.x) && YRange.Contains(probe.y))
+        return (true, maxY);
     }
-    return 0;
-  }
-
-  private bool IsProbeInRange(int x, int y)
-  {
-    return (XRange.Contains(x) && YRange.Contains(y));
-  }
-
-  public override string ToString()
-  {
-    return $"Shooter [XRange: [{XRange.First()}..{XRange.Last()}] YRange: [{YRange.First()}..{YRange.Last()}]]";
+    return (false, 0);
   }
 }
