@@ -3,69 +3,83 @@
 void Run()
 {
   var players = GetPlayersFromInput("input.txt").ToList();
-  var dice = new DeterministicDice();
-  var foundWinner = false;
-  while (!foundWinner)
-  {
-    foreach (var player in players)
-    {
-      player.Move(dice.Throw());
-      if (player.Score >= 1000)
-      {
-        foundWinner = true;
-        break;
-      }
-    }
-  }
-  var losingPlayerScore = players.Single(p => p.Score < 1000).Score;
-  Console.WriteLine(losingPlayerScore * dice.ThrownTimes);
+  Console.WriteLine(Play(players[0], players[1]));
 }
 
 IEnumerable<Player> GetPlayersFromInput(string filename)
 {
   foreach (var line in File.ReadAllLines(filename))
   {
-    var id = int.Parse(line.Remove(0, 7)[0].ToString());
     var startingPos = int.Parse(line.Substring(line.Length-1));
-    yield return new Player(id, startingPos);
+    yield return new Player(startingPos, 0);
   }
 }
 
-public interface IDice
+long Play(Player p1, Player p2)
 {
-    public int Throw();
+  Dictionary<(Player p1, Player p2), long> memo = new();
+  return PlayRecursive(p1, p2, memo);
 }
 
-public class DeterministicDice : IDice
+long PlayRecursive(Player p1, Player p2, Dictionary<(Player p1, Player p2), long> memo)
 {
-  public int ThrownTimes { get; private set; } = 0;
-  private int NextResult { get; set; } = 1;
-  private int MaxResult { get; set; } = 100;
-  public int Throw()
+  if (memo.ContainsKey((p1, p2)))
+    return memo[(p1, p2)];
+
+  long res = -1;
+  if (p1.Score >= 21)
   {
-    var result = NextResult++;
-    if (NextResult > 100) NextResult = 1;
-    result += NextResult++;
-    if (NextResult > 100) NextResult = 1;
-    result += NextResult++;
-    if (NextResult > 100) NextResult = 1;
-    ThrownTimes += 3;
-    return result;
+    memo.Add((p1, p2), 1);
+    return 1;
   }
+  else if (p2.Score >= 21)
+  {
+    memo.Add((p1, p2), 0);
+    return 0;
+  }
+  else
+  {
+    res = 0;
+    for (var p11 = 1; p11 <= 3; p11++)
+    {
+      for (var p12 = 1; p12 <= 3; p12++)
+      {
+        for (var p13 = 1; p13 <= 3; p13++)
+        {
+          var p1Dice = (p11+p12+p13);
+          var npos1 = GetPosition(p1.Position, p1Dice);
+          var np1 = new Player(npos1, p1.Score + npos1);
+          if (np1.Score >= 21)
+          {
+            res += 1;
+            continue;
+          }
+          for (var p21 = 1; p21 <= 3; p21++)
+          {
+            for (var p22 = 1; p22 <= 3; p22++)
+            {
+              for (var p23 = 1; p23 <= 3; p23++)
+              {
+                var p2Dice = (p21+p22+p23);
+                var npos2 = GetPosition(p2.Position, p2Dice);
+                var np2 = new Player(npos2, p2.Score + npos2);
+                res += PlayRecursive(np1, np2, memo);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  memo.Add((p1, p2), res);
+  return res;
 }
 
-public class Player
+int GetPosition(int pos, int dice)
 {
-  public int ID { get; init; }
-  public int Position { get; private set; }
-  public int Score { get; private set; }
-  public Player (int id, int startingPosition) =>
-    (ID, Position) = (id, startingPosition);
-  public void Move(int steps)
-  {
-    Position += steps;
-    Position = Position % 10;
-    if (Position == 0) Position = 10;
-    Score += Position;
-  }
+  var end = (pos + dice) % 10;
+  if (end == 0) end = 10;
+  return end;
 }
+
+public record Player(int Position, int Score);
